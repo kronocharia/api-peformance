@@ -1,10 +1,12 @@
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
 from pandas import DataFrame
 
 from datasource import datasource
-import numpy as np
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
+from datasource.datasource import ApiResult, ApiProfile
+from outputs import outputhelper
 
 
 def import_additional_results_from_csv(filename: str) -> DataFrame:
@@ -51,15 +53,13 @@ def foo():
 
     # fig = px.scatter(df, x=df_melt.x, y=df_melt.value, color=df_melt.variable)
 
-    trace2 = go.Scatter( x=df.x, y=df.input2, mode="lines+markers")
+    trace2 = go.Scatter(x=df.x, y=df.input2, mode="lines+markers")
     fig.add_trace(trace2)
-
-
 
     fig.show()
 
-def api():
 
+def api():
     df = import_additional_results_from_csv("api_input")
 
     mean = df.groupby("x").mean()
@@ -67,20 +67,49 @@ def api():
     fig = px.scatter(df, x=df.x, y=df.api_input)
     trace2 = go.Scatter(x=mean.index, y=mean.api_input, mode="lines+markers", name="Mean")
     fig.add_trace(trace2)
-    fig.show()
+    outputhelper.save_figure(fig, "test1")
+
 
 def api_live():
+    apicalls: [ApiProfile] = datasource.create_dummy_api_csv()
+    df = DataFrame.from_records([dict(entry) for entry in apicalls])
 
-    df = DataFrame(datasource.create_dummy_api_csv())
+    df.duration = pd.to_numeric(df.duration)
+    df.ticketcount = pd.to_numeric(df.ticketcount)
+    # print(df.shape)
+    print(df.info())
 
-    print(df)
+    mean = df.groupby("ticketcount").mean()
+    # print(mean)
 
-    mean = df.groupby("x").mean()
-    print(mean)
-    fig = px.scatter(df, x=df.x, y=df.api_input)
-    trace2 = go.Scatter(x=mean.index, y=mean.api_input, mode="lines+markers", name="Mean")
+    api_improved = datasource.create_dummy_api_improvement_csv()
+    df2 = DataFrame.from_records([dict(entry2) for entry2 in api_improved])
+    df2.duration = pd.to_numeric(df2.duration)
+    df2.ticketcount = pd.to_numeric(df2.ticketcount)
+    trace3 = go.Scatter(x=df2.ticketcount, y=df2.duration, mode="markers", name="Improved")
+
+    mean2 = df2.groupby("ticketcount").mean()
+    trace4 = go.Scatter(x=mean2.index, y=mean2.duration, mode="lines+markers", name="Improved-Mean")
+
+
+    fig = go.Figure()
+    trace1 = go.Scatter(x=df.ticketcount, y=df.duration, mode="markers", name="Base")
+    fig.add_trace(trace1)
+    # fig = px.scatter(df, x=df.ticketcount, y=df.duration)
+    trace2 = go.Scatter(x=mean.index, y=mean.duration, mode="lines+markers", name="Base-Mean")
     fig.add_trace(trace2)
-    fig.show()
+    fig.add_trace(trace3)
+    fig.add_trace(trace4)
+
+    results = df[['ticketcount', 'duration']].copy()
+    results['improved'] = df2.duration
+    print(results)
+
+
+
+
+    outputhelper.save_figure(fig)
+    outputhelper.dump_data(results, "api-mean-changes")
 
 
 if __name__ == '__main__':

@@ -1,5 +1,7 @@
+import copy
 import csv
 import os
+from math import floor
 from random import randint
 
 from prodict import Prodict
@@ -34,14 +36,42 @@ def create_dummy_csv():
             writer.writerows(output)
 
 
+def generate_base_duration(seed: int) -> int:
+    return (seed + 1) * 100
+
+
 def generate_random_duration(seed: int) -> int:
-    base_duration = (seed + 1) * 100
-    duration = base_duration + randint(1, 100)
+    duration = generate_base_duration(seed) + randint(1, 100)
+    return add_outlier_chance_to_duration(duration)
 
+
+def add_outlier_chance_to_duration(duration: int) -> int:
+    final_duration = copy.deepcopy(duration)
     if randint(1, 100) > 75:
-        duration + randint(300, 400)
+        random_offset = randint(300, 400)
+        if randint(1, 10) > 5:
+            final_duration + random_offset
+        else:
+            final_duration - random_offset
 
-    return duration
+    return final_duration
+
+
+def generate_random_duration_with_api_improvements(seed: int, improvement_min, improvement_max) -> int:
+    duration = (generate_base_duration(seed) * 0.7) + randint(1, 100)
+
+    # simulate api optimisations that have generally made things faster
+    if randint(1, 10) > 3:
+        duration - randint(improvement_min, improvement_max)
+    else:
+        duration + randint(improvement_min, improvement_max)
+
+    return add_outlier_chance_to_duration(duration)
+
+
+def generator_api_improvements(seed: int):
+    # return generate_random_duration_with_api_improvements(seed, floor(seed / 10), floor(seed / 4))
+    return generate_random_duration_with_api_improvements(seed, 200, 300)
 
 
 class ApiProfile(Prodict):
@@ -50,11 +80,11 @@ class ApiProfile(Prodict):
 
 
 class ApiResult(Prodict):
-    count: str
+    ticketcount: str
     duration: str
 
 
-def create_dummy_api_csv():
+def create_dummy_api_csv_with_generator(generation_fn):
     profile: [ApiProfile] = []
 
     output = []
@@ -73,8 +103,8 @@ def create_dummy_api_csv():
         profile_index = profile_entry.ticketCount
 
         for i in range(int(profile_entry.desiredAccounts)):
-            output.append(ApiResult(count=profile_index,
-                                    duration=generate_random_duration(int(profile_index))))
+            output.append(ApiResult(ticketcount=profile_index,
+                                    duration=generation_fn(int(profile_index))))
 
         with open(get_file_path('temp_out.csv'), 'w', newline='') as file:
             writer = csv.DictWriter(file, fieldnames=ApiResult.attr_names())
@@ -83,6 +113,15 @@ def create_dummy_api_csv():
     return output
 
 
+def create_dummy_api_csv():
+    return create_dummy_api_csv_with_generator(generate_random_duration)
+
+
+def create_dummy_api_improvement_csv():
+    return create_dummy_api_csv_with_generator(generator_api_improvements)
+
+
 if __name__ == '__main__':
     # create_dummy_csv()
-    create_dummy_api_csv()
+    # create_dummy_api_csv()
+    create_dummy_api_improvement_csv()
