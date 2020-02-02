@@ -1,8 +1,12 @@
+from math import floor
+from random import randint
+
 import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from pandas import DataFrame
+from prodict import Prodict
 
 from datasource import datasource
 from datasource.datasource import ApiResult, ApiProfile
@@ -91,7 +95,6 @@ def api_live():
     mean2 = df2.groupby("ticketcount").mean()
     trace4 = go.Scatter(x=mean2.index, y=mean2.duration, mode="lines+markers", name="Improved-Mean")
 
-
     fig = go.Figure()
     trace1 = go.Scatter(x=df.ticketcount, y=df.duration, mode="markers", name="Base")
     fig.add_trace(trace1)
@@ -105,14 +108,55 @@ def api_live():
     results['improved'] = df2.duration
     print(results)
 
-
-
-
     outputhelper.save_figure(fig)
-    outputhelper.dump_data(results, "api-mean-changes")
+    outputhelper.dump_data_as_csv(results, "api-mean-changes")
+
+
+def generate_api_url(entity_id: int):
+    return f"rest/v1/accounts/{entity_id}/tickets"
+
+
+class ApiCallSheet(Prodict):
+    ticketcount: int
+    url: str
+    duration: int
+
+
+def raw_api_call_data():
+    output = []
+
+    keys = ApiCallSheet.attr_names()
+
+    for entry in range(100):
+        entity_id = randint(19283, 23671)
+        num_tickets = randint(1, 25)
+        url = generate_api_url(entity_id)
+        duration = randint(100, 800)
+
+        output.append({
+            keys[0]: num_tickets,
+            keys[1]: url,
+            keys[2]: duration
+        })
+    datasource.write_to_csv(output, "raw-calls", keys)
+
+
+def probably_speed_up(x):
+    if randint(1, 10) > 8:
+        return x + randint(1, floor(x / 4))
+    else:
+        return x - randint(1, floor(x / 3))
+
+
+def raw_api_call_second():
+    df = pd.read_csv(datasource.get_file_path("raw-calls.csv"))
+    df.duration = df.duration.apply(lambda x: probably_speed_up(x))
+    df.to_csv(datasource.get_file_path("raw-calls-2.csv"), index=False)
 
 
 if __name__ == '__main__':
     # foo()
     # api()
-    api_live()
+    # api_live()
+    raw_api_call_data()
+    raw_api_call_second()

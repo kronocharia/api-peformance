@@ -113,6 +113,13 @@ def create_dummy_api_csv_with_generator(generation_fn):
     return output
 
 
+def write_to_csv(output: [], filename: str, fieldnames: [str]):
+    with open(get_file_path(filename+".csv"), "w", newline="") as file:
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(output)
+
+
 def create_dummy_api_csv():
     return create_dummy_api_csv_with_generator(generate_random_duration)
 
