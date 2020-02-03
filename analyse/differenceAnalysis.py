@@ -12,7 +12,7 @@ import sys
 
 from outputs import outputhelper
 
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG,
+logging.basicConfig(stream=sys.stdout, level=logging.INFO,
                     format='%(filename)s:%(lineno)d %(levelname)s - \n%(message)s')
 log = logging.getLogger(__name__)
 
@@ -43,6 +43,18 @@ def draw_difference_graph(file1="raw-calls", file2="raw-calls-2"):
 
     outputhelper.save_figure(fig, "difference-graph")
     outputhelper.dump_data_as_csv(merged, "difference-data")
+
+    tolerance_ms = 10
+
+    slowdowns = merged[(merged[_signum] == -1) & (abs(merged[_difference]) > tolerance_ms)]
+
+    if slowdowns is None:
+        log.info("✅✅There were no API calls that took longer")
+    else:
+        log.warning("============== 🔻🔻🔻 Results 🔻🔻🔻 ================")
+        log.warning(f"🔻🔻There were {len(slowdowns.index)} slower api calls that were greater than"
+                    f" tolerance {tolerance_ms}ms")
+        outputhelper.dump_data_as_csv(slowdowns, "difference-data-slowdowns", with_index=False)
 
 
 def merge_data_and_compute_difference(raw_calls_2, raw_calls_base):

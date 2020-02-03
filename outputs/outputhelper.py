@@ -13,9 +13,9 @@ def save_figure(fig, filename: str = "temp"):
     saveplotoffline(fig, filename=full_filename)
 
 
-def dump_data_as_csv(df: DataFrame, filename: str = "apirawtimes"):
+def dump_data_as_csv(df: DataFrame, filename: str = "apirawtimes", with_index=True):
     full_filename = os.path.join(dirname, "datadump", filename + ".csv")
-    df.to_csv(full_filename)
+    df.to_csv(full_filename, index=with_index)
     print(f"File saved to {full_filename}")
 
 
