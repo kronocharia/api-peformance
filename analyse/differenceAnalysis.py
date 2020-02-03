@@ -52,8 +52,8 @@ def draw_difference_graph(file1="raw-calls", file2="raw-calls-2"):
         log.info("✅✅There were no API calls that took longer")
     else:
         log.warning("============== 🔻🔻🔻 Results 🔻🔻🔻 ================")
-        log.warning(f"🔻🔻There were {len(slowdowns.index)} slower api calls that were greater than"
-                    f" tolerance {tolerance_ms}ms")
+        log.warning(f"🔻🔻 [{len(slowdowns.index)}] out of [{len(merged.index)}] api calls were slower "
+                    f" (tolerance {tolerance_ms}ms)")
         outputhelper.dump_data_as_csv(slowdowns, "difference-data-slowdowns", with_index=False)
 
 
